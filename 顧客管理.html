@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>顧客管理</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d0f;--surface:#141417;--surface2:#1c1c21;--border:#2a2a32;--accent:#c8f542;--accent2:#42f5c8;--accent3:#f5a742;--text:#e8e8ec;--text2:#888899;--text3:#555566;--danger:#f54242;--radius:12px;--font-mono:'DM Mono',monospace;--font-ja:'Noto Sans JP',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-ja);overflow:hidden;}
+.screen{display:none;height:100dvh;flex-direction:column;}.screen.active{display:flex;}
+.list-header{padding:52px 20px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.list-header-top{display:flex;justify-content:space-between;align-items:center;}
+.app-label{font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:.15em;margin-bottom:4px;}
+.app-title{font-size:24px;font-weight:600;}
+.btn-add{width:44px;height:44px;background:var(--accent);color:#0d0d0f;border:none;border-radius:50%;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;transition:transform .15s;}
+.btn-add:active{transform:scale(.9);}
+.client-count{font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:10px;}
+.client-count span{color:var(--accent);}
+.list-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.client-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .2s;}
+.client-card:active{border-color:var(--accent);}
+.client-avatar{width:44px;height:44px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.client-info{flex:1;min-width:0;}
+.client-name{font-size:16px;font-weight:600;margin-bottom:3px;}
+.client-meta{font-family:var(--font-mono);font-size:11px;color:var(--text2);}
+.client-tag{font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--text3);white-space:nowrap;}
+.client-tag.has-data{border-color:var(--accent2);color:var(--accent2);}
+.client-arrow{color:var(--text3);font-size:18px;}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:10px;}
+.empty-icon{font-size:44px;}.empty-text{font-family:var(--font-mono);font-size:12px;}
+.detail-header{padding:48px 16px 0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.detail-header-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.btn-back{background:none;border:none;color:var(--accent);font-size:24px;cursor:pointer;padding:4px;line-height:1;}
+.detail-name{font-size:20px;font-weight:600;flex:1;}
+.btn-del-client{background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;padding:5px 10px;border-radius:20px;cursor:pointer;font-family:var(--font-mono);}
+.tabs{display:flex;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:9px 14px;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--text3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-content{display:none;flex:1;overflow-y:auto;}.tab-content.active{display:block;}
+.accordion{border-bottom:1px solid var(--border);}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;-webkit-user-select:none;}
+.accordion-header:active{background:var(--surface2);}
+.accordion-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.accordion-badge{font-family:var(--font-mono);font-size:10px;background:var(--accent);color:#0d0d0f;padding:2px 7px;border-radius:10px;}
+.accordion-arrow{font-size:12px;color:var(--text3);transition:transform .2s;}.accordion-arrow.open{transform:rotate(90deg);}
+.accordion-body{display:none;padding:2px 16px 16px;}.accordion-body.open{display:block;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-family:var(--font-mono);font-size:10px;color:var(--text2);margin-bottom:4px;letter-spacing:.05em;}
+.field input,.field textarea,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-ja);font-size:14px;padding:8px 11px;outline:none;-webkit-appearance:none;transition:border-color .2s;}
+.field input:focus,.field textarea:focus{border-color:var(--accent);}
+.field textarea{resize:none;overflow:hidden;}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888899' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.btn-save{width:100%;background:var(--accent);color:#0d0d0f;border:none;border-radius:10px;padding:12px;font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.05em;cursor:pointer;margin-top:14px;transition:opacity .2s,transform .15s;}
+.btn-save:active{transform:scale(.98);opacity:.85;}
+/* PFC */
+.pfc-summary{margin:10px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.pfc-row{display:flex;gap:6px;margin-bottom:8px;}
+.pfc-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px;text-align:center;}
+.pfc-box.p{border-color:#4af0a0;}.pfc-box.f{border-color:#f0a04a;}.pfc-box.c{border-color:#4a9ff0;}
+.pfc-lbl{font-family:var(--font-mono);font-size:9px;color:var(--text3);margin-bottom:2px;}
+.pfc-val{font-family:var(--font-mono);font-size:17px;font-weight:500;}
+.pfc-box.p .pfc-val{color:#4af0a0;}.pfc-box.f .pfc-val{color:#f0a04a;}.pfc-box.c .pfc-val{color:#4a9ff0;}
+.pfc-unit-lbl{font-family:var(--font-mono);font-size:9px;color:var(--text3);}
+.kcal-line{text-align:center;font-family:var(--font-mono);font-size:12px;color:var(--text2);}
+.kcal-line span{color:var(--accent);font-size:19px;}
+.pfc-auto-note{font-family:var(--font-mono);font-size:10px;color:var(--text3);text-align:center;margin-top:6px;}
+/* Goals */
+.goal-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.goal-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.goal-text{flex:1;font-size:13px;}
+.btn-goal-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:2px 4px;}
+/* Session */
+.session-card{margin:0 16px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;}
+.session-date{font-family:var(--font-mono);font-size:11px;color:var(--accent2);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+.session-metrics{display:flex;gap:12px;flex-wrap:wrap;}
+.s-lbl{font-family:var(--font-mono);font-size:9px;color:var(--text3);}
+.s-val{font-family:var(--font-mono);font-size:14px;}
+.s-u{font-family:var(--font-mono);font-size:9px;color:var(--text3);}
+.session-note{margin-top:7px;font-size:12px;color:var(--text2);line-height:1.6;white-space:pre-wrap;}
+.diff-d{color:#4af0a0;font-size:10px;margin-left:2px;}.diff-u{color:var(--danger);font-size:10px;margin-left:2px;}
+.mini-chart{margin:10px 16px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.chart-title{font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:.1em;margin-bottom:8px;}
+.btn-add-session{display:block;margin:10px 16px 8px;background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:11px;text-align:center;font-family:var(--font-mono);font-size:12px;color:var(--text2);cursor:pointer;width:calc(100% - 32px);transition:border-color .2s,color .2s;}
+.btn-add-session:active{border-color:var(--accent);color:var(--accent);}
+.tag-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.tag{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s;-webkit-user-select:none;}
+.tag.selected{background:var(--accent);border-color:var(--accent);color:#0d0d0f;}
+/* Program card */
+.prog-card{margin:0 16px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.prog-card-header{padding:11px 13px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;-webkit-user-select:none;}
+.prog-card-header:active{background:var(--surface2);}
+.prog-card-date{font-family:var(--font-mono);font-size:12px;color:var(--accent3);font-weight:500;margin-bottom:4px;}
+.prog-card-phase{font-family:var(--font-mono);font-size:10px;color:var(--text2);background:var(--surface2);padding:2px 8px;border-radius:10px;border:1px solid var(--border);display:inline-block;}
+.prog-card-right{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;}
+.prog-card-toggle{color:var(--accent);font-size:18px;transition:transform .2s;line-height:1;}
+.prog-card-toggle.closed{transform:rotate(-90deg);}
+.prog-card-body{display:block;padding:0 13px 13px;border-top:1px solid var(--border);}
+.prog-card-body.closed{display:none;}
+.prog-section{margin-top:10px;}
+.prog-section-label{font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:.1em;margin-bottom:4px;}
+.prog-section-text{font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap;}
+.prog-focus-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.prog-focus-tag{font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:10px;background:var(--accent);color:#0d0d0f;}
+.prog-reflect-bad{color:var(--danger);font-size:13px;line-height:1.7;white-space:pre-wrap;}
+.prog-reflect-next{color:var(--accent2);font-size:13px;line-height:1.7;white-space:pre-wrap;}
+.prog-action-btns{display:flex;gap:6px;}
+.prog-btn{background:none;font-size:11px;cursor:pointer;font-family:var(--font-mono);padding:3px 8px;border-radius:6px;}
+.prog-btn.edit{border:1px solid var(--accent2);color:var(--accent2);}
+.prog-btn.del{border:1px solid var(--border);color:var(--text3);}
+.export-box{margin:10px 16px 32px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.export-note{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px;}
+.btn-export{width:100%;background:none;border:1px solid var(--accent2);color:var(--accent2);border-radius:8px;padding:10px;font-family:var(--font-mono);font-size:11px;cursor:pointer;margin-bottom:6px;}
+.btn-export.orange{border-color:var(--accent3);color:var(--accent3);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px 16px 40px;width:100%;max-width:640px;max-height:90dvh;overflow-y:auto;}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:14px;}
+.btn-cancel{width:100%;background:none;border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:11px;font-family:var(--font-mono);font-size:12px;cursor:pointer;margin-top:8px;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d0d0f;padding:9px 18px;border-radius:20px;font-family:var(--font-mono);font-size:12px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+.reflect-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;}
+.reflect-lbl{font-family:var(--font-mono);font-size:10px;margin-bottom:5px;}
+.reflect-lbl.bad{color:var(--danger);}.reflect-lbl.next{color:var(--accent2);}
+.modal textarea,.modal input[type=text],.modal input[type=date],.modal input[type=number]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-ja);font-size:14px;padding:8px 11px;outline:none;-webkit-appearance:none;transition:border-color .2s;}
+.modal textarea{resize:none;overflow:hidden;}
+.modal textarea:focus,.modal input:focus{border-color:var(--accent);}
+.modal select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-ja);font-size:14px;padding:8px 11px;outline:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888899' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.db-status{font-family:var(--font-mono);font-size:10px;color:var(--text3);text-align:center;padding:6px;}
+</style>
+</head>
+<body>
+
+<div id="screen-list" class="screen active">
+  <div class="list-header">
+    <div class="list-header-top">
+      <div><div class="app-label">パーソナルトレーナー</div><div class="app-title">顧客管理</div></div>
+      <button class="btn-add" onclick="openAddClientModal()">＋</button>
+    </div>
+    <div class="client-count">登録顧客 <span id="client-count-num">0</span> 名</div>
+  </div>
+  <div class="list-body" id="client-list-body"></div>
+</div>
+
+<div id="screen-detail" class="screen">
+  <div class="detail-header">
+    <div class="detail-header-top">
+      <button class="btn-back" onclick="showList()">‹</button>
+      <div class="detail-name" id="detail-name">---</div>
+      <button class="btn-del-client" onclick="deleteCurrentClient()">削除</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('info')">基本情報</button>
+      <button class="tab" onclick="switchTab('pfc')">PFC目標</button>
+      <button class="tab" onclick="switchTab('session')">記録</button>
+      <button class="tab" onclick="switchTab('program')">プログラム</button>
+    </div>
+  </div>
+
+  <!-- TAB: 基本情報 -->
+  <div class="tab-content active" id="tab-info">
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAcc(this)"><div class="accordion-title">📋 プロフィール</div><div class="accordion-arrow open">›</div></div>
+      <div class="accordion-body open">
+        <div class="field-row"><div class="field"><label>年齢</label><input type="number" id="f-age" placeholder="51"></div><div class="field"><label>性別</label><select id="f-gender"><option value="female">女性</option><option value="male">男性</option></select></div></div>
+        <div class="field-row3"><div class="field"><label>身長 cm</label><input type="number" id="f-height" placeholder="162"></div><div class="field"><label>体重 kg</label><input type="number" step="0.1" id="f-weight" placeholder="54.0"></div><div class="field"><label>体脂肪率 %</label><input type="number" step="0.1" id="f-bf" placeholder="31.2"></div></div>
+        <div class="field-row"><div class="field"><label>基礎代謝 kcal</label><input type="number" id="f-bmr" placeholder="1083"></div><div class="field"><label>内臓脂肪</label><input type="number" step="0.5" id="f-visceral" placeholder="5"></div></div>
+        <div class="field-row"><div class="field"><label>来館頻度</label><select id="f-freq"><option>月1回</option><option>月2回</option><option>月4回</option><option>週1回</option><option>週2回</option><option>週3回</option></select></div><div class="field"><label>開始日</label><input type="date" id="f-start"></div></div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAcc(this)"><div class="accordion-title">🎯 ゴール <span class="accordion-badge" id="goal-badge" style="display:none"></span></div><div class="accordion-arrow open">›</div></div>
+      <div class="accordion-body open">
+        <div id="goal-list"></div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <input type="text" id="goal-input" placeholder="ゴールを入力して追加" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-ja);font-size:14px;padding:8px 11px;outline:none;">
+          <button onclick="addGoal()" style="background:var(--accent);border:none;border-radius:8px;color:#0d0d0f;padding:8px 13px;font-family:var(--font-mono);font-size:12px;cursor:pointer;white-space:nowrap;">追加</button>
+        </div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAcc(this)"><div class="accordion-title">🏥 既往歴・禁忌</div><div class="accordion-arrow">›</div></div>
+      <div class="accordion-body">
+        <div class="field"><label>既往歴・疾患</label><textarea id="f-history" rows="2" oninput="ar(this)" placeholder="腰椎椎間板ヘルニア（2020年）など"></textarea></div>
+        <div class="field"><label>禁忌・注意事項</label><textarea id="f-contraindication" rows="2" oninput="ar(this)" placeholder="高負荷の体幹トレーニング禁止 など"></textarea></div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAcc(this)"><div class="accordion-title">🌙 生活習慣</div><div class="accordion-arrow">›</div></div>
+      <div class="accordion-body">
+        <div class="field-row"><div class="field"><label>睡眠時間</label><input type="text" id="f-sleep" placeholder="6時間前後"></div><div class="field"><label>仕事スタイル</label><select id="f-work"><option>在宅・デスクワーク</option><option>通勤・デスクワーク</option><option>立ち仕事</option><option>外回り</option><option>引退・無職</option><option>その他</option></select></div></div>
+        <div class="field-row"><div class="field"><label>週平均歩数</label><input type="number" id="f-steps" placeholder="4000" oninput="autoCalcPFC()"></div><div class="field"><label>自主トレ</label><input type="text" id="f-selftrain" placeholder="朝晩ストレッチ30分"></div></div>
+        <div class="field"><label>食事の傾向・課題</label><textarea id="f-diet-note" rows="2" oninput="ar(this)" placeholder="外食が続くと食事を抜いて調整することがある など"></textarea></div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAcc(this)"><div class="accordion-title">📝 その他メモ</div><div class="accordion-arrow">›</div></div>
+      <div class="accordion-body">
+        <div class="field"><textarea id="f-memo" rows="3" oninput="ar(this)" placeholder="相談内容・気になること・お客様の言葉など"></textarea></div>
+      </div>
+    </div>
+    <div style="padding:0 16px 32px;"><button class="btn-save" onclick="saveInfo()">保存する</button></div>
+  </div>
+
+  <!-- TAB: PFC -->
+  <div class="tab-content" id="tab-pfc">
+    <div class="pfc-summary">
+      <div class="pfc-row">
+        <div class="pfc-box p"><div class="pfc-lbl">PROTEIN</div><div class="pfc-val" id="disp-p">—</div><div class="pfc-unit-lbl">g/day</div></div>
+        <div class="pfc-box f"><div class="pfc-lbl">FAT</div><div class="pfc-val" id="disp-f">—</div><div class="pfc-unit-lbl">g/day</div></div>
+        <div class="pfc-box c"><div class="pfc-lbl">CARBS</div><div class="pfc-val" id="disp-c">—</div><div class="pfc-unit-lbl">g/day</div></div>
+      </div>
+      <div class="kcal-line">目標 <span id="disp-kcal">—</span> kcal／日</div>
+      <div class="pfc-auto-note" id="pfc-auto-note"></div>
+    </div>
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAcc(this)"><div class="accordion-title">⚡ PFC設定</div><div class="accordion-arrow open">›</div></div>
+      <div class="accordion-body open">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-bottom:8px;">自動計算（基本情報から）</div>
+          <div class="field-row" style="margin-bottom:8px;">
+            <div class="field" style="margin-bottom:0"><label>活動レベル</label>
+              <select id="activity-level" onchange="autoCalcPFC()">
+                <option value="1.2">低（座位中心）</option>
+                <option value="1.375">やや低（軽い運動あり）</option>
+                <option value="1.55">中（週3〜5運動）</option>
+                <option value="1.725">高（週6〜7運動）</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0"><label>目標</label>
+              <select id="goal-type" onchange="autoCalcPFC()">
+                <option value="cut">減量（-15%）</option>
+                <option value="maintain">維持</option>
+                <option value="bulk">増量（+10%）</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="autoCalcPFC()" style="width:100%;background:var(--surface);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:8px;font-family:var(--font-mono);font-size:11px;cursor:pointer;">基本情報から自動計算</button>
+        </div>
+        <div class="field-row"><div class="field"><label>タンパク質 g（手動修正可）</label><input type="number" id="pfc-p" placeholder="100" oninput="calcK()"></div><div class="field"><label>脂質 g</label><input type="number" id="pfc-f" placeholder="35" oninput="calcK()"></div></div>
+        <div class="field-row"><div class="field"><label>炭水化物 g</label><input type="number" id="pfc-c" placeholder="110" oninput="calcK()"></div><div class="field"><label>合計 kcal（自動）</label><input type="number" id="pfc-kcal" readonly style="color:var(--accent)"></div></div>
+        <div class="field"><label>食事アドバイス・変更点</label><textarea id="pfc-memo" rows="2" oninput="ar(this)" placeholder="がんもどき→木綿豆腐 など"></textarea></div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAcc(this)"><div class="accordion-title">🚶 有酸素設定</div><div class="accordion-arrow open">›</div></div>
+      <div class="accordion-body open">
+        <div class="field-row3"><div class="field"><label>傾斜</label><input type="number" step="0.5" id="c-incline" placeholder="9"></div><div class="field"><label>スピード</label><input type="number" step="0.1" id="c-speed" placeholder="3.5"></div><div class="field"><label>時間 分</label><input type="number" id="c-time" placeholder="30"></div></div>
+        <div class="field-row"><div class="field"><label>頻度</label><select id="c-freq"><option>セッション時のみ</option><option>週1</option><option>週2</option><option>週3以上</option></select></div><div class="field"><label>メモ</label><input type="text" id="c-note" placeholder="ウォームアップとして"></div></div>
+      </div>
+    </div>
+    <div style="padding:0 16px 32px;"><button class="btn-save" onclick="savePFC()">保存する</button></div>
+  </div>
+
+  <!-- TAB: 記録 -->
+  <div class="tab-content" id="tab-session">
+    <div id="chart-area"></div>
+    <button class="btn-add-session" onclick="openAddSessionModal()">＋ セッション記録を追加</button>
+    <div id="session-list"></div>
+    <div style="height:32px;"></div>
+  </div>
+
+  <!-- TAB: プログラム -->
+  <div class="tab-content" id="tab-program">
+    <button class="btn-add-session" onclick="openProgModal(null)" style="border-color:var(--accent3);color:var(--accent3);">＋ プログラムを記録する</button>
+    <div id="program-list"></div>
+    <div class="export-box">
+      <div class="export-note">定期的にバックアップしてください。</div>
+      <button class="btn-export orange" onclick="exportAllClients()">📦 全顧客データをエクスポート</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 顧客追加 -->
+<div class="modal-overlay" id="modal-add-client">
+  <div class="modal">
+    <div class="modal-title">顧客を追加</div>
+    <div class="field"><label>氏名</label><input type="text" id="new-name" placeholder="山田 花子"></div>
+    <div class="field-row"><div class="field"><label>年齢</label><input type="number" id="new-age" placeholder="51"></div><div class="field"><label>性別</label><select id="new-gender"><option value="female">女性</option><option value="male">男性</option></select></div></div>
+    <button class="btn-save" onclick="addClient()">追加する</button>
+    <button class="btn-cancel" onclick="closeModal('modal-add-client')">キャンセル</button>
+  </div>
+</div>
+
+<!-- MODAL: セッション追加 -->
+<div class="modal-overlay" id="modal-add-session">
+  <div class="modal">
+    <div class="modal-title">セッション記録</div>
+    <div class="field"><label>日付</label><input type="date" id="ses-date"></div>
+    <div class="field-row"><div class="field"><label>体重 kg</label><input type="number" step="0.1" id="ses-weight" placeholder="54.0"></div><div class="field"><label>体脂肪率 %</label><input type="number" step="0.1" id="ses-bf" placeholder="31.2"></div></div>
+    <div class="field-row"><div class="field"><label>内臓脂肪</label><input type="number" step="0.5" id="ses-visceral" placeholder="5"></div><div class="field"><label>基礎代謝 kcal</label><input type="number" id="ses-bmr" placeholder="1083"></div></div>
+    <div class="field"><label>セッションメモ</label><textarea id="ses-note" rows="3" placeholder="内容・気づき・お客様の様子など"></textarea></div>
+    <button class="btn-save" onclick="addSession()">記録する</button>
+    <button class="btn-cancel" onclick="closeModal('modal-add-session')">キャンセル</button>
+  </div>
+</div>
+
+<!-- MODAL: プログラム追加・編集 -->
+<div class="modal-overlay" id="modal-prog">
+  <div class="modal">
+    <div class="modal-title" id="prog-modal-title">プログラムを記録</div>
+    <input type="hidden" id="prog-edit-id">
+    <div class="field"><label>日付</label><input type="date" id="prog-date"></div>
+    <div class="field-row">
+      <div class="field"><label>フェーズ</label>
+        <select id="prog-phase">
+          <option>体力づくり期</option>
+          <option>姿勢改善期</option>
+          <option>減量期</option>
+          <option>増量期</option>
+          <option>維持期</option>
+          <option>リハビリ期</option>
+          <option>再評価期</option>
+          <option>移行期</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div class="field"><label>フェーズ補足（自由）</label><input type="text" id="prog-phase-note" placeholder="例：術後3ヶ月目"></div>
+    </div>
+    <div class="field"><label>次回見直し日</label><input type="date" id="prog-review"></div>
+    <div class="field"><label>実施部位</label>
+      <div class="tag-row" id="prog-focus-tags" style="margin-top:6px;">
+        <div class="tag" data-val="体幹" onclick="toggleTag(this)">体幹</div>
+        <div class="tag" data-val="下半身" onclick="toggleTag(this)">下半身</div>
+        <div class="tag" data-val="上半身" onclick="toggleTag(this)">上半身</div>
+        <div class="tag" data-val="肩" onclick="toggleTag(this)">肩</div>
+        <div class="tag" data-val="背中" onclick="toggleTag(this)">背中</div>
+        <div class="tag" data-val="胸" onclick="toggleTag(this)">胸</div>
+        <div class="tag" data-val="腕" onclick="toggleTag(this)">腕</div>
+        <div class="tag" data-val="臀部" onclick="toggleTag(this)">臀部</div>
+        <div class="tag" data-val="股関節" onclick="toggleTag(this)">股関節</div>
+        <div class="tag" data-val="膝" onclick="toggleTag(this)">膝</div>
+        <div class="tag" data-val="足関節" onclick="toggleTag(this)">足関節</div>
+        <div class="tag" data-val="頸部" onclick="toggleTag(this)">頸部</div>
+        <div class="tag" data-val="全身" onclick="toggleTag(this)">全身</div>
+        <div class="tag" data-val="有酸素" onclick="toggleTag(this)">有酸素</div>
+      </div>
+    </div>
+    <div class="field"><label>姿勢タイプ・所見</label><textarea id="prog-posture" rows="2" oninput="ar(this)" placeholder="上位交差症候群傾向。肩甲骨外転・前傾あり"></textarea></div>
+    <div class="field"><label>アセスメントメモ</label><textarea id="prog-assess" rows="2" oninput="ar(this)" placeholder="評価結果・気づきなど"></textarea></div>
+    <div class="field"><label>プログラム内容</label><textarea id="prog-detail" rows="4" oninput="ar(this)" placeholder="① ヒップヒンジ 3×12&#10;② グルートブリッジ 3×15&#10;有酸素：傾斜9 / 3.5km/h / 30分"></textarea></div>
+    <div class="reflect-wrap">
+      <div class="reflect-lbl bad">⚠️ 今回うまくいかなかったこと</div>
+      <textarea id="prog-bad" rows="2" oninput="ar(this)" placeholder="フォームが崩れた、痛みが出た など"></textarea>
+    </div>
+    <div class="reflect-wrap">
+      <div class="reflect-lbl next">→ だから次回こうする</div>
+      <textarea id="prog-next" rows="2" oninput="ar(this)" placeholder="負荷を下げてフォーム優先 など"></textarea>
+    </div>
+    <div class="field"><label>今後の計画（中長期）</label><textarea id="prog-plan" rows="2" oninput="ar(this)" placeholder="3ヶ月で体脂肪-3%。来月からRDL導入予定"></textarea></div>
+    <button class="btn-save" onclick="saveProg()">保存する</button>
+    <button class="btn-cancel" onclick="closeModal('modal-prog')">キャンセル</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== IndexedDB =====
+const DB_NAME='pt_manager';const DB_VER=1;const STORE='clients';
+let db=null;
+function initDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'});};
+    req.onsuccess=e=>{db=e.target.result;res();};
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbGetAll(){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(STORE,'readonly');
+    const req=tx.objectStore(STORE).getAll();
+    req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);
+  });
+}
+function dbPut(obj){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(STORE,'readwrite');
+    const req=tx.objectStore(STORE).put(obj);
+    req.onsuccess=()=>res();req.onerror=()=>rej(req.error);
+  });
+}
+function dbDelete(id){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(STORE,'readwrite');
+    const req=tx.objectStore(STORE).delete(id);
+    req.onsuccess=()=>res();req.onerror=()=>rej(req.error);
+  });
+}
+
+// ===== STATE =====
+let clients=[];let currentId=null;
+function getC(){return clients.find(c=>c.id===currentId);}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function ar(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function arAll(){document.querySelectorAll('textarea').forEach(ar);}
+function toggleAcc(h){const a=h.querySelector('.accordion-arrow'),b=h.nextElementSibling,o=b.classList.contains('open');b.classList.toggle('open',!o);a.classList.toggle('open',!o);}
+function toggleTag(el){el.classList.toggle('selected');}
+
+async function saveClient(){const c=getC();await dbPut(c);}
+
+// ===== LIST =====
+function renderList(){
+  const body=document.getElementById('client-list-body');
+  document.getElementById('client-count-num').textContent=clients.length;
+  if(clients.length===0){body.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">右上の＋から顧客を追加</div></div>';return;}
+  body.innerHTML=clients.map(c=>{
+    const ls=c.sessions&&c.sessions.length>0?c.sessions[c.sessions.length-1]:null;
+    const meta=[c.age?c.age+'歳':'',c.gender==='female'?'女性':'男性'].filter(Boolean).join(' · ');
+    const wt=ls&&ls.weight?ls.weight+'kg · '+ls.bf+'%':c.weight?c.weight+'kg':'未記録';
+    const em=c.gender==='female'?'👩':'👨';
+    const hd=c.sessions&&c.sessions.length>0;
+    return `<div class="client-card" onclick="openClient('${c.id}')"><div class="client-avatar">${em}</div><div class="client-info"><div class="client-name">${c.name}</div><div class="client-meta">${meta?meta+' · ':''}${wt}</div></div><div class="client-tag ${hd?'has-data':''}">${c.freq||'未設定'}</div><div class="client-arrow">›</div></div>`;
+  }).join('');
+}
+
+// ===== ADD CLIENT =====
+function openAddClientModal(){document.getElementById('new-name').value='';document.getElementById('new-age').value='';document.getElementById('modal-add-client').classList.add('open');setTimeout(()=>document.getElementById('new-name').focus(),300);}
+async function addClient(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name){showToast('名前を入力してください');return;}
+  const c={id:genId(),name,age:document.getElementById('new-age').value,gender:document.getElementById('new-gender').value,height:'',weight:'',bf:'',bmr:'',visceral:'',freq:'月2回',start:'',history:'',contraindication:'',sleep:'',work:'',steps:'',selftrain:'',dietNote:'',memo:'',goals:[],pfc:{p:'',f:'',c:'',kcal:'',memo:'',incline:'',speed:'',time:'',cfreq:'',cnote:'',activity:'1.2',goalType:'cut'},sessions:[],programs:[]};
+  clients.unshift(c);await dbPut(c);closeModal('modal-add-client');renderList();openClient(c.id);
+}
+function openClient(id){currentId=id;const c=getC();document.getElementById('detail-name').textContent=c.name;document.getElementById('screen-list').classList.remove('active');document.getElementById('screen-detail').classList.add('active');switchTab('info');loadInfo();}
+function showList(){document.getElementById('screen-detail').classList.remove('active');document.getElementById('screen-list').classList.add('active');renderList();}
+async function deleteCurrentClient(){const c=getC();if(!confirm(`「${c.name}」を削除しますか？`))return;clients=clients.filter(x=>x.id!==currentId);await dbDelete(currentId);showList();showToast('削除しました');}
+
+// ===== TABS =====
+function switchTab(tab){
+  const ts=['info','pfc','session','program'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ts[i]===tab));
+  document.querySelectorAll('.tab-content').forEach((t,i)=>t.classList.toggle('active',ts[i]===tab));
+  if(tab==='info'){loadInfo();setTimeout(arAll,50);}
+  if(tab==='pfc'){loadPFC();setTimeout(arAll,50);}
+  if(tab==='session')loadSessions();
+  if(tab==='program')loadPrograms();
+}
+
+// ===== AUTO OPEN ACC =====
+function autoOpenAcc(fieldId,hasData){
+  if(!hasData)return;
+  const el=document.getElementById(fieldId);if(!el)return;
+  const body=el.closest('.accordion-body');if(!body||body.classList.contains('open'))return;
+  const header=body.previousElementSibling;
+  body.classList.add('open');
+  const arrow=header.querySelector('.accordion-arrow');if(arrow)arrow.classList.add('open');
+}
+
+// ===== INFO =====
+function loadInfo(){
+  const c=getC();
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  s('f-age',c.age);s('f-gender',c.gender||'female');s('f-height',c.height);s('f-weight',c.weight);s('f-bf',c.bf);s('f-bmr',c.bmr);s('f-visceral',c.visceral);s('f-freq',c.freq||'月2回');s('f-start',c.start);s('f-history',c.history);s('f-contraindication',c.contraindication);s('f-sleep',c.sleep);s('f-work',c.work||'在宅・デスクワーク');s('f-steps',c.steps);s('f-selftrain',c.selftrain);s('f-diet-note',c.dietNote);s('f-memo',c.memo);
+  renderGoals();
+  autoOpenAcc('f-history',c.history||c.contraindication);
+  autoOpenAcc('f-sleep',c.sleep||c.steps||c.selftrain||c.dietNote);
+  autoOpenAcc('f-memo',c.memo);
+}
+async function saveInfo(){
+  const c=getC();const g=id=>document.getElementById(id).value;
+  Object.assign(c,{age:g('f-age'),gender:g('f-gender'),height:g('f-height'),weight:g('f-weight'),bf:g('f-bf'),bmr:g('f-bmr'),visceral:g('f-visceral'),freq:g('f-freq'),start:g('f-start'),history:g('f-history'),contraindication:g('f-contraindication'),sleep:g('f-sleep'),work:g('f-work'),steps:g('f-steps'),selftrain:g('f-selftrain'),dietNote:g('f-diet-note'),memo:g('f-memo')});
+  await saveClient();showToast('保存しました ✓');
+}
+function renderGoals(){
+  const c=getC();const list=document.getElementById('goal-list');const badge=document.getElementById('goal-badge');
+  if(!c.goals||c.goals.length===0){list.innerHTML='<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);padding:4px 0 6px;">未設定</div>';badge.style.display='none';return;}
+  badge.textContent=c.goals.length;badge.style.display='inline-block';
+  list.innerHTML=c.goals.map((g,i)=>`<div class="goal-item"><div class="goal-dot"></div><div class="goal-text">${g}</div><button class="btn-goal-del" onclick="deleteGoal(${i})">×</button></div>`).join('');
+}
+async function addGoal(){const inp=document.getElementById('goal-input');const v=inp.value.trim();if(!v)return;const c=getC();if(!c.goals)c.goals=[];c.goals.push(v);await saveClient();inp.value='';renderGoals();}
+async function deleteGoal(i){const c=getC();c.goals.splice(i,1);await saveClient();renderGoals();}
+
+// ===== PFC AUTO CALC =====
+function autoCalcPFC(){
+  const c=getC();
+  const weight=parseFloat(document.getElementById('f-weight').value||c.weight)||0;
+  const bf=parseFloat(document.getElementById('f-bf').value||c.bf)||0;
+  const steps=parseFloat(document.getElementById('f-steps').value||c.steps)||0;
+  const activity=parseFloat(document.getElementById('activity-level').value)||1.2;
+  const goalType=document.getElementById('goal-type').value;
+  if(!weight||!bf){document.getElementById('pfc-auto-note').textContent='基本情報に体重・体脂肪率を入力してください';return;}
+  const lbm=weight*(1-bf/100);
+  const bmr=Math.round(370+21.6*lbm);
+  const tdee=Math.round(bmr*activity);
+  let targetKcal=tdee;
+  if(goalType==='cut')targetKcal=Math.round(tdee*0.85);
+  if(goalType==='bulk')targetKcal=Math.round(tdee*1.10);
+  const p=Math.round(lbm*2.0);
+  const f=Math.round(weight*1.0);
+  const pKcal=p*4;const fKcal=f*9;
+  const c_g=Math.round((targetKcal-pKcal-fKcal)/4);
+  document.getElementById('pfc-p').value=p;
+  document.getElementById('pfc-f').value=f;
+  document.getElementById('pfc-c').value=Math.max(c_g,50);
+  calcK();
+  document.getElementById('pfc-auto-note').textContent=`TDEE約${tdee}kcal → 目標${targetKcal}kcal（自動計算）`;
+}
+function calcK(){const p=parseFloat(document.getElementById('pfc-p').value)||0,f=parseFloat(document.getElementById('pfc-f').value)||0,cr=parseFloat(document.getElementById('pfc-c').value)||0;document.getElementById('pfc-kcal').value=Math.round(p*4+f*9+cr*4)||'';}
+function loadPFC(){
+  const c=getC();const pfc=c.pfc||{};
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  s('pfc-p',pfc.p);s('pfc-f',pfc.f);s('pfc-c',pfc.c);s('pfc-kcal',pfc.kcal);s('pfc-memo',pfc.memo);s('c-incline',pfc.incline);s('c-speed',pfc.speed);s('c-time',pfc.time);s('c-note',pfc.cnote);
+  if(pfc.cfreq)document.getElementById('c-freq').value=pfc.cfreq;
+  if(pfc.activity)document.getElementById('activity-level').value=pfc.activity;
+  if(pfc.goalType)document.getElementById('goal-type').value=pfc.goalType;
+  updPFC(pfc.p,pfc.f,pfc.c,pfc.kcal);
+  autoOpenAcc('pfc-memo',pfc.memo);
+}
+function updPFC(p,f,c,k){document.getElementById('disp-p').textContent=p||'—';document.getElementById('disp-f').textContent=f||'—';document.getElementById('disp-c').textContent=c||'—';document.getElementById('disp-kcal').textContent=k||'—';}
+async function savePFC(){
+  const c=getC();const g=id=>document.getElementById(id).value;
+  c.pfc={p:g('pfc-p'),f:g('pfc-f'),c:g('pfc-c'),kcal:g('pfc-kcal'),memo:g('pfc-memo'),incline:g('c-incline'),speed:g('c-speed'),time:g('c-time'),cfreq:g('c-freq'),cnote:g('c-note'),activity:g('activity-level'),goalType:g('goal-type')};
+  await saveClient();updPFC(c.pfc.p,c.pfc.f,c.pfc.c,c.pfc.kcal);showToast('PFCを保存しました ✓');
+}
+
+// ===== SESSIONS =====
+function openAddSessionModal(){document.getElementById('ses-date').value=new Date().toISOString().split('T')[0];['ses-weight','ses-bf','ses-visceral','ses-bmr','ses-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('modal-add-session').classList.add('open');}
+async function addSession(){
+  const c=getC();const date=document.getElementById('ses-date').value;if(!date){showToast('日付を入力してください');return;}
+  const s={id:genId(),date,weight:document.getElementById('ses-weight').value,bf:document.getElementById('ses-bf').value,visceral:document.getElementById('ses-visceral').value,bmr:document.getElementById('ses-bmr').value,note:document.getElementById('ses-note').value};
+  if(!c.sessions)c.sessions=[];c.sessions.push(s);c.sessions.sort((a,b)=>a.date.localeCompare(b.date));
+  await saveClient();closeModal('modal-add-session');loadSessions();showToast('記録しました ✓');
+}
+async function deleteSession(sid){const c=getC();c.sessions=c.sessions.filter(s=>s.id!==sid);await saveClient();loadSessions();showToast('削除しました');}
+function loadSessions(){
+  const c=getC();const sessions=(c.sessions||[]).slice().reverse();
+  const ca=document.getElementById('chart-area');const list=document.getElementById('session-list');
+  if(sessions.length===0){ca.innerHTML='';list.innerHTML='<div style="text-align:center;font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:20px;">記録がありません</div>';return;}
+  if(sessions.length>=2){ca.innerHTML='<div class="mini-chart"><div class="chart-title">WEIGHT TREND</div><canvas id="w-chart" height="90"></canvas><div class="chart-title" style="margin-top:12px">BODY FAT TREND</div><canvas id="b-chart" height="90"></canvas></div>';setTimeout(()=>{drawChart('w-chart',c.sessions.map(s=>s.date.slice(5)),c.sessions.map(s=>parseFloat(s.weight)||null),'#c8f542');drawChart('b-chart',c.sessions.map(s=>s.date.slice(5)),c.sessions.map(s=>parseFloat(s.bf)||null),'#42f5c8');},50);}
+  else ca.innerHTML='';
+  list.innerHTML=sessions.map((s,i)=>{
+    const prev=sessions[i+1];
+    const wd=prev&&s.weight&&prev.weight?(parseFloat(s.weight)-parseFloat(prev.weight)).toFixed(1):null;
+    const bd=prev&&s.bf&&prev.bf?(parseFloat(s.bf)-parseFloat(prev.bf)).toFixed(1):null;
+    const wdH=wd?`<span class="${parseFloat(wd)<0?'diff-d':'diff-u'}">${parseFloat(wd)>0?'+':''}${wd}</span>`:'';
+    const bdH=bd?`<span class="${parseFloat(bd)<0?'diff-d':'diff-u'}">${parseFloat(bd)>0?'+':''}${bd}</span>`:'';
+    return `<div class="session-card"><div class="session-date"><span>${s.date}</span><button onclick="deleteSession('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font-mono);">削除</button></div><div class="session-metrics">${s.weight?`<div><div class="s-lbl">体重</div><div><span class="s-val">${s.weight}</span><span class="s-u">kg</span>${wdH}</div></div>`:''}${s.bf?`<div><div class="s-lbl">体脂肪率</div><div><span class="s-val">${s.bf}</span><span class="s-u">%</span>${bdH}</div></div>`:''}${s.visceral?`<div><div class="s-lbl">内臓脂肪</div><div><span class="s-val">${s.visceral}</span></div></div>`:''}${s.bmr?`<div><div class="s-lbl">基礎代謝</div><div><span class="s-val">${s.bmr}</span><span class="s-u">kcal</span></div></div>`:''}</div>${s.note?`<div class="session-note">${s.note}</div>`:''}</div>`;
+  }).join('');
+}
+function drawChart(id,labels,data,color){
+  const canvas=document.getElementById(id);if(!canvas)return;
+  const ctx=canvas.getContext('2d');const dpr=window.devicePixelRatio||1;
+  const w=canvas.parentElement.clientWidth-24;const h=90;
+  canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+'px';canvas.style.height=h+'px';ctx.scale(dpr,dpr);
+  const valid=data.filter(d=>d!==null);if(valid.length<2)return;
+  const mn=Math.min(...valid)-.5,mx=Math.max(...valid)+.5;
+  const pad={t:8,r:8,b:20,l:32};const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+  ctx.clearRect(0,0,w,h);
+  [0,.5,1].forEach(f=>{const y=pad.t+ch*(1-f);ctx.strokeStyle='#2a2a32';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();ctx.fillStyle='#444455';ctx.font='9px monospace';ctx.fillText((mn+(mx-mn)*f).toFixed(1),0,y+4);});
+  const pts=data.map((d,i)=>({x:pad.l+(i/(data.length-1))*cw,y:d!==null?pad.t+ch*(1-(d-mn)/(mx-mn)):null}));
+  const g=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);g.addColorStop(0,color+'44');g.addColorStop(1,color+'00');
+  ctx.beginPath();let st=false;pts.forEach(p=>{if(!p.y)return;if(!st){ctx.moveTo(p.x,p.y);st=true;}else ctx.lineTo(p.x,p.y);});
+  const lv=pts.filter(p=>p.y).pop(),fv=pts.find(p=>p.y);
+  if(lv&&fv){ctx.lineTo(lv.x,pad.t+ch);ctx.lineTo(fv.x,pad.t+ch);ctx.closePath();ctx.fillStyle=g;ctx.fill();}
+  ctx.beginPath();st=false;pts.forEach(p=>{if(!p.y)return;if(!st){ctx.moveTo(p.x,p.y);st=true;}else ctx.lineTo(p.x,p.y);});
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+  pts.forEach(p=>{if(!p.y)return;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();});
+  const step=Math.ceil(labels.length/5);labels.forEach((l,i)=>{if(i%step===0||i===labels.length-1){ctx.fillStyle='#444455';ctx.font='9px monospace';ctx.fillText(l,pts[i].x-10,h-3);}});
+}
+
+// ===== PROGRAMS =====
+function openProgModal(editId){
+  const c=getC();
+  document.getElementById('prog-edit-id').value=editId||'';
+  document.getElementById('prog-modal-title').textContent=editId?'プログラムを編集':'プログラムを記録';
+  document.querySelectorAll('#prog-focus-tags .tag').forEach(t=>t.classList.remove('selected'));
+  if(editId){
+    const prog=c.programs.find(p=>p.id===editId);
+    if(!prog)return;
+    document.getElementById('prog-date').value=prog.date||'';
+    document.getElementById('prog-phase').value=prog.phase||'体力づくり期';
+    document.getElementById('prog-phase-note').value=prog.phaseNote||'';
+    document.getElementById('prog-review').value=prog.review||'';
+    document.getElementById('prog-posture').value=prog.posture||'';
+    document.getElementById('prog-assess').value=prog.assess||'';
+    document.getElementById('prog-detail').value=prog.detail||'';
+    document.getElementById('prog-bad').value=prog.bad||'';
+    document.getElementById('prog-next').value=prog.next||'';
+    document.getElementById('prog-plan').value=prog.plan||'';
+    document.querySelectorAll('#prog-focus-tags .tag').forEach(t=>t.classList.toggle('selected',(prog.focus||[]).includes(t.dataset.val)));
+  } else {
+    document.getElementById('prog-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('prog-review').value='';
+    document.getElementById('prog-phase').value='体力づくり期';
+    document.getElementById('prog-phase-note').value='';
+    ['prog-posture','prog-assess','prog-detail','prog-bad','prog-next','prog-plan'].forEach(id=>document.getElementById(id).value='');
+  }
+  document.getElementById('modal-prog').classList.add('open');
+  setTimeout(arAll,100);
+}
+async function saveProg(){
+  const c=getC();
+  const date=document.getElementById('prog-date').value;if(!date){showToast('日付を入力してください');return;}
+  const g=id=>document.getElementById(id).value;
+  const focus=[...document.querySelectorAll('#prog-focus-tags .tag.selected')].map(t=>t.dataset.val);
+  const editId=document.getElementById('prog-edit-id').value;
+  const prog={id:editId||genId(),date,phase:g('prog-phase'),phaseNote:g('prog-phase-note'),review:g('prog-review'),focus,posture:g('prog-posture'),assess:g('prog-assess'),detail:g('prog-detail'),bad:g('prog-bad'),next:g('prog-next'),plan:g('prog-plan')};
+  if(!c.programs)c.programs=[];
+  if(editId){const idx=c.programs.findIndex(p=>p.id===editId);if(idx>=0)c.programs[idx]=prog;}
+  else{c.programs.push(prog);}
+  c.programs.sort((a,b)=>b.date.localeCompare(a.date));
+  await saveClient();closeModal('modal-prog');loadPrograms();showToast(editId?'更新しました ✓':'プログラムを記録しました ✓');
+}
+async function deleteProg(pid){if(!confirm('この記録を削除しますか？'))return;const c=getC();c.programs=c.programs.filter(p=>p.id!==pid);await saveClient();loadPrograms();showToast('削除しました');}
+function toggleProgCard(el){
+  const body=el.nextElementSibling;const arrow=el.querySelector('.prog-card-toggle');
+  const closed=body.classList.contains('closed');
+  body.classList.toggle('closed',!closed);arrow.classList.toggle('closed',!closed);
+}
+function loadPrograms(){
+  const c=getC();const progs=c.programs||[];
+  const list=document.getElementById('program-list');
+  if(progs.length===0){list.innerHTML='<div style="text-align:center;font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:20px;">記録がありません</div>';return;}
+  list.innerHTML=progs.map(p=>{
+    const focusTags=p.focus&&p.focus.length>0?`<div class="prog-focus-tags">${p.focus.map(f=>`<span class="prog-focus-tag">${f}</span>`).join('')}</div>`:'';
+    const phaseLabel=p.phase+(p.phaseNote?` / ${p.phaseNote}`:'');
+    const sections=[
+      p.posture?`<div class="prog-section"><div class="prog-section-label">姿勢・所見</div><div class="prog-section-text">${p.posture}</div></div>`:'',
+      p.assess?`<div class="prog-section"><div class="prog-section-label">アセスメント</div><div class="prog-section-text">${p.assess}</div></div>`:'',
+      p.detail?`<div class="prog-section"><div class="prog-section-label">プログラム内容</div><div class="prog-section-text">${p.detail}</div></div>`:'',
+      p.bad?`<div class="prog-section"><div class="prog-section-label">⚠️ うまくいかなかったこと</div><div class="prog-reflect-bad">${p.bad}</div></div>`:'',
+      p.next?`<div class="prog-section"><div class="prog-section-label">→ 次回こうする</div><div class="prog-reflect-next">${p.next}</div></div>`:'',
+      p.plan?`<div class="prog-section"><div class="prog-section-label">今後の計画</div><div class="prog-section-text">${p.plan}</div></div>`:'',
+      p.review?`<div class="prog-section"><div class="prog-section-label">次回見直し日</div><div class="prog-section-text">${p.review}</div></div>`:''
+    ].filter(Boolean).join('');
+    return `<div class="prog-card">
+      <div class="prog-card-header" onclick="toggleProgCard(this)">
+        <div><div class="prog-card-date">${p.date}</div><div class="prog-card-phase">${phaseLabel}</div>${focusTags}</div>
+        <div class="prog-card-right">
+          <div class="prog-action-btns">
+            <button onclick="event.stopPropagation();openProgModal('${p.id}')" class="prog-btn edit">編集</button>
+            <button onclick="event.stopPropagation();deleteProg('${p.id}')" class="prog-btn del">削除</button>
+          </div>
+          <div class="prog-card-toggle">∨</div>
+        </div>
+      </div>
+      <div class="prog-card-body">${sections||'<div style="font-size:12px;color:var(--text3);">内容なし</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== MODAL / EXPORT =====
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+async function exportAllClients(){
+  const blob=new Blob([JSON.stringify(clients,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`all_clients_${new Date().toISOString().slice(0,10)}.json`;a.click();
+  showToast('エクスポートしました');
+}
+
+// ===== INIT =====
+initDB().then(async()=>{
+  clients=await dbGetAll();
+  clients.sort((a,b)=>(a.createdAt||0)<(b.createdAt||0)?1:-1);
+  renderList();
+}).catch(e=>{
+  console.error(e);
+  showToast('DB初期化エラー');
+});
+</script>
+</body>
+</html>
